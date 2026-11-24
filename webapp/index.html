@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini-IA MDPH — assistant local (prototype factice)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  .ia-banner { background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.95rem; }
+  .ia-banner strong { display: block; margin-bottom: 0.25rem; }
+  form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+  input[type=text] { flex: 1; padding: 0.6rem; font-size: 1rem; }
+  button { padding: 0.6rem 1.2rem; font-size: 1rem; cursor: pointer; }
+  .fiche { border: 1px solid #999; border-radius: 8px; padding: 1rem; }
+  .fiche .meta { font-size: 0.85rem; color: #666; margin-top: 0.75rem; }
+  .abstention { border: 1px solid #c00; border-radius: 8px; padding: 1rem; }
+  .abstention h2 { color: #c00; margin-top: 0; }
+  .proche { margin: 0.4rem 0; }
+  footer { margin-top: 2rem; font-size: 0.8rem; color: #777; }
+  [data-no-pii] { font-size: 0.85rem; color: #a00; }
+</style>
+</head>
+<body>
+
+<div class="ia-banner" role="note">
+  <strong>Ceci est une intelligence artificielle locale.</strong>
+  Elle ne répond qu'avec des fiches validées par le comité métier, jamais en rédigeant une réponse libre.
+  Aucune donnée saisie ici n'est transmise où que ce soit (page locale, sans serveur).
+  <span data-no-pii>Ne saisissez aucune donnée personnelle (nom, situation d'un usager précis).</span>
+</div>
+
+<h1>Assistant MDPH — prototype factice</h1>
+<p>
+  <strong>Ce prototype ne contient pas de vraies fiches MDA.</strong>
+  Le corpus vient de sources publiques (Service-Public.fr, Cerfa, CNSA) rédigées pour tester le pipeline,
+  pas de questions réellement posées par des agents. Voir <code>corpus/README.md</code>.
+</p>
+
+<form id="form" autocomplete="off">
+  <input type="text" id="question" placeholder="Tapez une question (ex: c'est quoi la PCH ?)" aria-label="Votre question">
+  <button type="submit">Chercher</button>
+</form>
+
+<div id="resultat" aria-live="polite"></div>
+
+<footer>
+  Mini-IA métier MDPH — architecture : recherche plein texte (MiniSearch) + mini-classifieur, voir le plan de projet.
+  Code source : <code>webapp/js/classifier.js</code>, <code>webapp/js/app.js</code>.
+</footer>
+
+<script src="data/fiches.js"></script>
+<script src="data/model.js"></script>
+<script src="../vendor/minisearch/dist/umd/index.js"></script>
+<script src="js/classifier.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const assistant = new MiniIAAssistant(window.MODEL, window.FICHES);
+  const form = document.getElementById("form");
+  const input = document.getElementById("question");
+  const resultat = document.getElementById("resultat");
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function afficher(r) {
+    if (r.type === "fiche") {
+      const f = r.fiche;
+      const sourceHtml = f.source && f.source.url
+        ? `<a href="${escapeHtml(f.source.url)}" target="_blank" rel="noopener">${escapeHtml(f.source.titre)}</a>`
+        : escapeHtml((f.source && f.source.titre) || "source non précisée");
+      resultat.innerHTML = `
+        <div class="fiche">
+          <h2>${escapeHtml(f.question)}</h2>
+          <p>${escapeHtml(f.reponse)}</p>
+          <div class="meta">
+            Source : ${sourceHtml}<br>
+            Vérifié le ${escapeHtml(f.verifie_le)} — à revoir avant le ${escapeHtml(f.revue_avant)}<br>
+            Vérifiez la source avant toute décision.
+          </div>
+        </div>`;
+    } else {
+      const items = r.proches.map((f) =>
+        `<li class="proche"><strong>${escapeHtml(f.question)}</strong></li>`).join("");
+      resultat.innerHTML = `
+        <div class="abstention">
+          <h2>Je ne sais pas</h2>
+          <p>Aucune fiche validée ne correspond avec assez de certitude à cette question.</p>
+          ${items ? `<p>Fiches proches :</p><ul>${items}</ul>` : ""}
+        </div>`;
+    }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    afficher(assistant.repondre(q));
+  });
+</script>
+</body>
+</html>
