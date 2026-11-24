@@ -127,4 +127,20 @@ avec le fait que Tiny 2.1 lui-même a eu besoin de 15 millions d'exemples pour b
 La taille actuelle, plus petite, est donc le bon choix pour le volume de données disponible, pas un compromis par
 défaut.
 
+Question inverse ensuite posée : et plus petit que l'actuel, ce serait mieux ? Balayé 7 tailles (`model/sweep_architecture.py`) :
+
+| Architecture | Paramètres | Précision validation |
+|---|---|---|
+| D=32, 1 couche | 19 283 | 42,5% |
+| D=32, 2 couches | 27 539 | 45,8% |
+| D=48, 1 couche | 35 011 | 46,7% |
+| D=48, 2 couches | 53 539 | 46,7% |
+| D=64, 1 couche | 54 835 | 47,5% |
+| **D=64, 2 couches (actuelle)** | **87 731** | **50,0%** |
+| D=96, 4 couches (Tiny 2.1) | 377 683 | 27,5% |
+
+Tendance monotone dans les deux sens : la précision augmente avec la taille jusqu'à la configuration actuelle, puis
+s'effondre au-delà. La taille actuelle n'est donc pas un compromis arbitraire mais le point optimal trouvé parmi
+tout ce qui a été testé — plus petit manque de capacité, plus gros surapprend avec ce volume de données.
+
 Détails des limites connues dans `corpus/README.md` et `sources/SOURCES_INDEX.md`. Historique daté dans `CHANGELOG.md`.

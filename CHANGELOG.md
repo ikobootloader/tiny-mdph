@@ -106,3 +106,23 @@ Résultat, qui répond au critère du plan « gain du mini-modèle sur la recher
 | recherche seule | 623/645 | 77,4% | **21,9%** | 13,6% |
 
 **Aucun des deux composants pris isolément ne passe le seuil de sécurité du plan** — ni le classifieur seul (sans la recherche, le seuil de confiance retenu étant 0,00, il ne s'abstient quasiment jamais : 73,5% de réponses confiantes fausses), ni la recherche seule (21,9%, soit 10 fois le seuil, cohérent avec ce que le plan annonçait déjà : « fiable mais dépend des mots employés », sans mécanisme d'abstention). C'est bien la combinaison des deux qui fait tenir la propriété de sécurité (1,1%), pas l'un ou l'autre. Démontré aussi en direct sur la page (Playwright) : la question hors champ « il va faire beau ce week-end ? » obtient « je ne sais pas » en arbitrage, mais une fiche MVA en mode classifieur seul et une fiche TND en mode recherche seule — toutes deux fausses avec assurance.
+
+## 2026-11-23 — Architecture du classifieur : plus petit que Tiny 2.1, et c'est voulu
+
+Question posée après les mauvais chiffres du mode « classifieur seul » : la taille de Tiny 2.1 d'origine (D=96, 4 couches, 367 000 paramètres) ferait-elle mieux que la taille actuelle (D=64, 2 couches, 87 731 paramètres), choisie à l'origine pour un corpus bien plus petit (259 exemples) ? Testé directement (script jetable, supprimé après usage) : avec le corpus actuel (2481 exemples d'entraînement, 115 classes), la taille Tiny 2.1 atteint 27,5% de précision sur le jeu de validation, contre 50,0% pour la taille actuelle. Plus gros surapprend plus vite avec ce volume de données ; la taille actuelle reste le bon choix. Aucun fichier du pipeline modifié par ce test.
+
+## 2026-11-23 — Balayage complet : la taille actuelle est l'optimum, dans les deux sens
+
+Question suivante, symétrique : et une architecture plus petite que l'actuelle, ce serait meilleur ? Écrit `model/sweep_architecture.py` (gardé cette fois, contrairement au script jetable précédent) et balayé 7 tailles, mêmes seed/split/boucle d'entraînement que `model/train.py` pour une comparaison honnête :
+
+| Architecture | Paramètres | Précision validation |
+|---|---|---|
+| D=32, 1 couche | 19 283 | 42,5% |
+| D=32, 2 couches | 27 539 | 45,8% |
+| D=48, 1 couche | 35 011 | 46,7% |
+| D=48, 2 couches | 53 539 | 46,7% |
+| D=64, 1 couche | 54 835 | 47,5% |
+| D=64, 2 couches (actuelle) | 87 731 | **50,0%** |
+| D=96, 4 couches (Tiny 2.1) | 377 683 | 27,5% |
+
+Tendance monotone dans les deux sens : la précision progresse avec la taille jusqu'à la configuration actuelle, puis s'effondre au-delà (déjà mesuré). Réponse claire à la question : non, plus petit ne serait pas meilleur — la taille actuelle est l'optimum empirique trouvé parmi les deux directions testées, pas un choix arbitraire ni un compromis par défaut.
