@@ -92,3 +92,17 @@ Réentraîné et réévalué sur les mêmes 645 questions. **Les quatre critère
 - Bonne fiche dans le top 3 : 90% — 438/486 (seuil ≥90%, tout juste)
 
 Honnêteté sur les deux derniers : ils passent pile au seuil, pas confortablement. Un effet de bord est apparu avec l'ajout de reformulations sur `CMI-STATIONNEMENT-CONDITIONS` ("la carte de stationnement") : la question hors champ "Comment contester une amende de stationnement ?" est maintenant confondue avec cette fiche — exactement le genre de régression qu'ajouter des mots-clés peut provoquer ailleurs. À surveiller, pas à ignorer : avec un jeu de test plus grand encore, ce chevauchement lexical referait probablement baisser le score d'abstention sous le seuil.
+
+## 2026-11-23 — Le classifieur seul et la recherche seule, mesurés séparément
+
+Ajouté un paramètre `mode` à `Assistant.repondre()` (`webapp/js/app.js`) : `"arbitrage"` (défaut, inchangé), `"classifieur"` (ignore la recherche), `"recherche"` (ignore le classifieur, ne s'abstient jamais — elle n'a pas de mécanisme d'abstention propre). Bascule ajoutée sur `webapp/index.html` (boutons radio) pour tester interactivement ; `webapp/test/evaluate_e2e.js --compare` calcule les trois modes côte à côte sur les 645 questions.
+
+Résultat, qui répond au critère du plan « gain du mini-modèle sur la recherche seule » :
+
+| mode | fiche affichée directement | dont correcte | mauvaise sûre (seuil ≤2%) | abstention hors champ |
+|---|---|---|---|---|
+| arbitrage | 137/645 | 94,9% | **1,1%** | 95,5% |
+| classifieur seul | 613/645 | 22,7% | **73,5%** | 27,3% |
+| recherche seule | 623/645 | 77,4% | **21,9%** | 13,6% |
+
+**Aucun des deux composants pris isolément ne passe le seuil de sécurité du plan** — ni le classifieur seul (sans la recherche, le seuil de confiance retenu étant 0,00, il ne s'abstient quasiment jamais : 73,5% de réponses confiantes fausses), ni la recherche seule (21,9%, soit 10 fois le seuil, cohérent avec ce que le plan annonçait déjà : « fiable mais dépend des mots employés », sans mécanisme d'abstention). C'est bien la combinaison des deux qui fait tenir la propriété de sécurité (1,1%), pas l'un ou l'autre. Démontré aussi en direct sur la page (Playwright) : la question hors champ « il va faire beau ce week-end ? » obtient « je ne sais pas » en arbitrage, mais une fiche MVA en mode classifieur seul et une fiche TND en mode recherche seule — toutes deux fausses avec assurance.

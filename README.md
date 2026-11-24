@@ -112,4 +112,10 @@ atteints** (95% réponse directe correcte, 1,1% mauvaise fiche sûre, 95% absten
 derniers tout juste au seuil, pas confortablement : un effet de bord est déjà apparu (une question hors champ sur une
 amende de stationnement confondue avec la CMI Stationnement, à cause d'une reformulation ajoutée ailleurs).
 
+**Classifieur seul vs recherche seule vs arbitrage** — `node webapp/test/evaluate_e2e.js --compare` (ou la bascule
+sur la page) mesure les trois séparément. Verdict net : ni le classifieur seul (73,5% de réponses confiantes
+fausses — son seuil de confiance appris ne filtre quasiment rien), ni la recherche seule (21,9%, 10x le seuil du
+plan) ne tiennent la propriété de sécurité ; seule leur combinaison y arrive (1,1%). C'est la validation directe du
+choix d'architecture du plan : ni l'un ni l'autre composant ne suffit seul.
+
 Détails des limites connues dans `corpus/README.md` et `sources/SOURCES_INDEX.md`. Historique daté dans `CHANGELOG.md`.
