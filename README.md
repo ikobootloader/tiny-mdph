@@ -118,4 +118,13 @@ fausses — son seuil de confiance appris ne filtre quasiment rien), ni la reche
 plan) ne tiennent la propriété de sécurité ; seule leur combinaison y arrive (1,1%). C'est la validation directe du
 choix d'architecture du plan : ni l'un ni l'autre composant ne suffit seul.
 
+**Taille du classifieur vs taille de Tiny 2.1** — question légitime : pourquoi utiliser une architecture plus
+petite (D=64, 2 couches, 87 731 paramètres) que celle de Tiny 2.1 d'origine (D=96, 4 couches, 367 000 paramètres) ?
+Testé directement plutôt que supposé : entraîner avec la taille de Tiny 2.1 sur notre corpus actuel donne une
+précision de validation de **27,5%**, contre **50,0%** avec la taille actuelle, plus petite. Avec seulement 2481
+exemples d'entraînement, un modèle 4,3× plus gros surapprend plus vite qu'il n'apprend un vrai signal — cohérent
+avec le fait que Tiny 2.1 lui-même a eu besoin de 15 millions d'exemples pour bien exploiter ses 367 000 paramètres.
+La taille actuelle, plus petite, est donc le bon choix pour le volume de données disponible, pas un compromis par
+défaut.
+
 Détails des limites connues dans `corpus/README.md` et `sources/SOURCES_INDEX.md`. Historique daté dans `CHANGELOG.md`.
